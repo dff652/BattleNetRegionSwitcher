@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+artifacts/
+publish/
+*.log
+*.backup
+Battle.net.config*
+settings.json
+work/
+.env
+.env.*
+*.zip
+*.png
+*.jpg
