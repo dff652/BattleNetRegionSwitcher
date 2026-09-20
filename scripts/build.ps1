@@ -16,7 +16,7 @@ try {
         $taskOutput = Join-Path $taskRoot 'artifacts/win-x64'
         & $DotnetPath publish $taskApp -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o $taskOutput --nologo
         if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
-        Copy-Item -LiteralPath (Join-Path $taskRoot 'README.md') -Destination (Join-Path $taskOutput '使用说明.md') -Force
+        Copy-Item -LiteralPath (Join-Path $taskRoot 'docs/PORTABLE.md') -Destination (Join-Path $taskOutput '使用说明.md') -Force
         Write-Output "Published to $taskOutput"
     }
 } finally { Pop-Location }

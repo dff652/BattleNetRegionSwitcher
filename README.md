@@ -11,6 +11,8 @@
 
 [获取便携版](#获取便携版) · [开始使用](#开始使用) · [日志与排错](#日志与排错) · [兼容与边界](#兼容与边界) · [反馈问题](https://github.com/dff652/BattleNetRegionSwitcher/issues)
 
+项目文档：[便携版使用说明](./docs/PORTABLE.md) · [验证记录](./docs/VALIDATION.md) · [进展与后续任务](./docs/STATUS.md) · [更新记录](./CHANGELOG.md)
+
 ## 看看界面
 
 <p align="center">
@@ -31,7 +33,7 @@
 
 1. 登录 GitHub，打开 [Windows 构建页面](https://github.com/dff652/BattleNetRegionSwitcher/actions/workflows/build.yml)。
 2. 选择最近一次成功的运行，在 **Artifacts** 中下载 `BattleNetRegionSwitcher-win-x64`。
-3. 解压 ZIP，双击 `BattleNetRegionSwitcher.exe`。不需要安装器、管理员权限或另装 .NET。
+3. 解压 ZIP，双击 `BattleNetRegionSwitcher.exe`。不需要安装器、管理员权限或另装 .NET；包内附有可离线阅读的 `使用说明.md`。
 
 构建产物保留 **14 天**；过期后需等待新构建，或由维护者手动触发。源码下载包不包含可运行 EXE。
 
