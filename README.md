@@ -7,7 +7,7 @@
 **把战网国服和国际服亚洲的启动入口，放进一个免安装的 Windows 工具。** 选择地区前检查运行状态；遇到问题，直接查看窗口里的调试日志。
 
 [![Windows build](https://github.com/dff652/BattleNetRegionSwitcher/actions/workflows/build.yml/badge.svg)](https://github.com/dff652/BattleNetRegionSwitcher/actions/workflows/build.yml)
-**Windows 11 x64 · v0.2.0 · 自带 .NET · 作者 [dff652](https://github.com/dff652)**
+**Windows 11 x64 · v0.2.1 · 自带 .NET · 作者 [dff652](https://github.com/dff652)**
 
 [获取便携版](#获取便携版) · [开始使用](#开始使用) · [日志与排错](#日志与排错) · [兼容与边界](#兼容与边界) · [反馈问题](https://github.com/dff652/BattleNetRegionSwitcher/issues)
 
@@ -66,10 +66,12 @@
 <details>
 <summary>本机保存了哪些数据？</summary>
 
-全部位于 `%LOCALAPPDATA%\BattleNetRegionSwitcher`：
+默认位于 `%LOCALAPPDATA%\BattleNetRegionSwitcher`：
 
 - `settings.json`：启动路径和上次请求地区。
 - `debug.log`：工具诊断记录，约 256 KiB 后轮转为 `debug.previous.log`；界面保留最近约 300 行。
+
+从带应用数据隔离的环境启动时，Windows 可能重定向该目录。v0.2.1 起，“打开日志目录”会解析实际存储位置后再打开资源管理器，无需手动查找或迁移日志。
 
 日志不自动上传，不采集战网原始日志、账号、密码、验证码、登录令牌或好友列表，不记录完整安装路径；异常仅记录类型。复制日志会写入系统剪贴板。设置与日志均不纳入源码仓库。
 
@@ -77,7 +79,7 @@
 
 ## 兼容与边界
 
-- **当前是初步验证版。** 本机 Windows 11 x64 已完成界面和重复启动阻止检查；12 项核心隔离测试通过。战网 2.52.12.17821 的国际服登录已有成功记录，完整“国际服 → 国服 → 国际服”及游戏验收仍待完成。详见 [验证记录](./docs/VALIDATION.md)。
+- **当前是初步验证版。** 本机 Windows 11 x64 已完成界面和重复启动阻止检查；12 项核心隔离测试及 4 项 Windows 目录检查通过。战网 2.52.12.17821 的国际服登录已有成功记录，完整“国际服 → 国服 → 国际服”及游戏验收仍待完成。详见 [验证记录](./docs/VALIDATION.md)。
 - **切换的是客户端登录入口。** 不迁移账号、角色、余额或购买内容，也不替你选择每款游戏的区服。
 - **参数不是已确认的官方稳定接口。** 客户端更新后需要重新验证；检查名单也不能覆盖所有游戏进程。
 - **不强杀、不代登录。** 工具不直接修改战网配置、语言或游戏文件，不保存凭据、不提供网络加速。战网自身可能记住最后一次地区选择。

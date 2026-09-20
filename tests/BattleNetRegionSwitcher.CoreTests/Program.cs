@@ -15,6 +15,14 @@ var tests = new (string Name, Action Run)[]
     ("cancelled request never starts", CancelledRequest),
     ("cancellation during checks prevents start", CancelledDuringProbe)
 };
+if (OperatingSystem.IsWindows())
+{
+    tests = [.. tests,
+        ("shell path resolves Unicode temp directory", () => ShellPath(Path.GetTempPath())),
+        ("shell path resolves AppData directory", () => ShellPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))),
+        ("shell path rejects a missing directory", MissingShellDirectory),
+        ("shell path rejects a regular file", ShellPathRejectsFile)];
+}
 var failed = 0;
 foreach (var test in tests)
 {
@@ -121,6 +129,49 @@ static void CancelledDuringProbe()
     var starter = new FakeStarter();
     var result = new ClientLauncher(new CancellingProbe(cancellation), starter).Launch(path, LoginRegion.China, cancellation.Token);
     Assert(!result.Started && result.Message.Contains("取消") && starter.Calls == 0);
+}
+
+static void ShellPath(string parent)
+{
+    if (!OperatingSystem.IsWindows()) return;
+    var directory = Path.Combine(parent, "BN 日志 & " + Guid.NewGuid().ToString("N"));
+    var file = Path.Combine(directory, "probe.txt");
+    var marker = Guid.NewGuid().ToString();
+    Directory.CreateDirectory(directory);
+    try
+    {
+        File.WriteAllText(file, marker);
+        var resolved = ShellDirectory.ResolvePath(directory);
+        Assert(Path.IsPathFullyQualified(resolved) && !resolved.StartsWith(@"\\?\"));
+        Assert(File.ReadAllText(Path.Combine(resolved, "probe.txt")) == marker);
+    }
+    finally
+    {
+        File.Delete(file);
+        Directory.Delete(directory); // Non-recursive: remove only this test's empty directory.
+    }
+}
+
+static void MissingShellDirectory()
+{
+    if (!OperatingSystem.IsWindows()) return;
+    var directory = Path.Combine(Path.GetTempPath(), "BN Missing " + Guid.NewGuid().ToString("N"));
+    try { ShellDirectory.ResolvePath(directory); }
+    catch (IOException) { Assert(!Directory.Exists(directory)); return; }
+    throw new Exception("A missing directory must fail without creating it.");
+}
+
+static void ShellPathRejectsFile()
+{
+    if (!OperatingSystem.IsWindows()) return;
+    var file = Path.GetTempFileName();
+    try
+    {
+        try { ShellDirectory.ResolvePath(file); }
+        catch (IOException) { return; }
+        throw new Exception("A regular file must not be accepted as a log directory.");
+    }
+    finally { File.Delete(file); }
 }
 
 static void Assert(bool value) { if (!value) throw new Exception("assertion failed"); }

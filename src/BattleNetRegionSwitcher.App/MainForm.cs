@@ -239,9 +239,16 @@ internal sealed class MainForm : Form
         try
         {
             Directory.CreateDirectory(store.DirectoryPath);
-            using var process = Process.Start(new ProcessStartInfo(store.DirectoryPath) { UseShellExecute = true });
+            var actualDirectory = ShellDirectory.ResolvePath(store.DirectoryPath);
+            using var process = Process.Start(new ProcessStartInfo(actualDirectory) { UseShellExecute = true });
+            SetStatus("已请求打开日志目录。");
+            Log("INFO", "已解析实际日志目录并请求资源管理器打开。");
         }
-        catch { SetStatus("无法打开日志目录，请检查当前用户的文件夹权限。"); }
+        catch (Exception ex)
+        {
+            SetStatus("无法打开日志目录。可先复制窗口日志用于反馈。");
+            Log("ERROR", $"打开日志目录失败；类型 {ex.GetType().Name}。");
+        }
     }
 
     private void UpdateLastRequest() => lastRequest.Text = settings.LastRequestedRegion switch

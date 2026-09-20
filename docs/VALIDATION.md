@@ -1,19 +1,32 @@
 # 验证记录
 
-记录日期：2026-09-21。工具版本：0.2.0，当前属于初步验证版。
+记录日期：2026-09-21。当前工具版本：0.2.1，属于初步验证版；下文保留早期版本的验证证据。
 
 ## 构建与发布包
 
 | 项目 | 已有证据 | 结论范围 |
 | --- | --- | --- |
 | 本机构建 | Windows 11 x64，.NET SDK 10.0.401，Release 构建零警告、零错误 | 源码能编译 |
-| 核心隔离测试 | 12 项通过，使用替身进程探测和启动器 | 验证程序逻辑，不登录真实战网 |
+| 核心及目录测试 | v0.2.1 在 Windows 上共 16 项通过：12 项核心隔离测试，4 项 Windows 文件系统检查 | 使用替身启动器，不登录真实战网；目录检查读取本机临时测试文件 |
 | 首次 GitHub Actions | 提交 `55ca559` 的 [构建运行](https://github.com/dff652/BattleNetRegionSwitcher/actions/runs/35524506041) 成功 | 云端编译、测试、自包含发布、产物上传通过 |
 | README 更新后的 Actions | 提交 `6effc58` 的 [构建运行](https://github.com/dff652/BattleNetRegionSwitcher/actions/runs/35525240414) 成功 | 文档更新未阻断构建 |
+| 文档与便携说明更新后的 Actions | 提交 `ef8cd07` 的 [构建运行](https://github.com/dff652/BattleNetRegionSwitcher/actions/runs/35525680351) 成功 | 独立说明随发布包上传 |
 | 本机便携 EXE | 窗口已运行，作者链接与调试日志面板已显示；战网、Agent 运行时点击地区按钮被阻止 | 已有客户端没有被工具关闭；其他电脑尚未验收 |
 | README 显示 | 桌面、手机宽度及深色背景预览检查通过，图片无缺失、页面无横向溢出 | 文档显示检查，不代表程序兼容性验证 |
 
 12 项测试覆盖：地区参数和工作目录、非法文件名、已有进程、探测失败、含特殊字符路径、非法地区值、文件缺失、启动前二次检查、启动失败、游戏及临时更新进程、提前取消、检查期间取消。
+
+另外 4 项 Windows 检查覆盖：含中文、空格和 `&` 的临时目录解析，应用数据目录解析，拒绝不存在的目录，拒绝普通文件。前两项通过实际文件内容核对解析结果，临时测试文件随后移除；不打开真实战网。
+
+## v0.2.1 日志目录修复
+
+- **复现：** 在本次 Codex 启动的测试环境中，v0.2.0 点击“打开日志目录”后，资源管理器报告普通 AppData 路径“位置不可用”。
+- **证据：** 目录句柄查询显示，文件实际位于宿主包的 `LocalCache/Local/BattleNetRegionSwitcher` 目录；旧按钮传递的是重定向前的逻辑路径，日志文件一直存在。
+- **修复：** 创建日志目录后，通过 Windows `GetFinalPathNameByHandleW` 解析实际位置，再调用资源管理器。代码不包含固定的用户名或宿主包名，也不移动已有日志。
+- **实际验收：** 在同一环境启动 v0.2.1，点击该按钮后资源管理器正常显示日志目录与 `debug.log`；日志增加了打开目录请求记录，未写入完整目录路径。
+- **范围：** 已验证本机重定向场景；另一台电脑和完整地区往返验收仍按下方清单执行。
+
+机制参考：[Microsoft 对应用数据重定向的说明](https://learn.microsoft.com/en-us/windows/msix/desktop/desktop-to-uwp-behind-the-scenes)、[GetFinalPathNameByHandleW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew)。
 
 ## 真实客户端观察
 
