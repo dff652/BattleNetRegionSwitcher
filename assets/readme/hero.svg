@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">战网地区切换工具：同一个客户端，两个登录入口</title>
+  <desc id="desc">深色背景延续应用界面。蓝色 CN 与青绿色 TW 分别代表国服和国际服亚洲启动参数，连接同一个战网启动程序。工具提供运行状态检查和调试日志。</desc>
+  <rect width="1200" height="300" rx="20" fill="#0f1622"/>
+  <g font-family="Segoe UI, Microsoft YaHei UI, PingFang SC, sans-serif">
+    <g id="project-title">
+      <text x="52" y="58" font-size="20" letter-spacing="2" fill="#9aadc7">BATTLE.NET REGION SWITCHER</text>
+      <text x="48" y="139" font-size="60" font-weight="700" fill="#e3ebf7">战网地区切换工具</text>
+      <text x="52" y="195" font-size="28" fill="#e3ebf7">同一个客户端，两个登录入口。</text>
+      <text x="52" y="251" font-size="22" fill="#9aadc7">免安装 EXE · 启动前检查 · 调试日志</text>
+    </g>
+    <g id="launch-entry-map">
+      <path d="M835 150H873V86H904M873 150V214H904" fill="none" stroke="#9aadc7" stroke-width="3"/>
+      <rect x="738" y="108" width="97" height="84" rx="12" fill="#1c2737"/>
+      <path d="M769 132L796 150L769 168Z" fill="#e3ebf7"/>
+      <rect x="904" y="44" width="240" height="84" rx="12" fill="#146bb3"/>
+      <text x="936" y="101" font-size="48" font-weight="700" fill="#ffffff">CN</text>
+      <text x="1031" y="96" font-size="26" fill="#ffffff">国服</text>
+      <rect x="904" y="172" width="240" height="84" rx="12" fill="#1b756c"/>
+      <text x="932" y="229" font-size="48" font-weight="700" fill="#ffffff">TW</text>
+      <text x="1040" y="224" font-size="26" fill="#ffffff">亚洲</text>
+    </g>
+  </g>
+</svg>

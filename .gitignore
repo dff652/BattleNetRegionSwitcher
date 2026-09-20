@@ -15,3 +15,5 @@ work/
 *.zip
 *.png
 *.jpg
+!assets/readme/*.png
+!assets/readme/*.jpg
