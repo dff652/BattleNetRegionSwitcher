@@ -3,14 +3,15 @@ namespace BattleNetRegionSwitcher.App;
 internal sealed class DebugLog
 {
     private const int MaxEntries = 300;
-    private readonly string directory;
+    private readonly string? directory;
     private readonly List<string> entries = [];
     internal IReadOnlyList<string> Entries => entries;
     internal bool LastWriteSucceeded { get; private set; } = true;
 
-    internal DebugLog(string directory)
+    internal DebugLog(string? directory)
     {
         this.directory = directory;
+        if (directory is null) { LastWriteSucceeded = false; return; }
         try
         {
             var path = Path.Combine(directory, "debug.log");
@@ -28,6 +29,7 @@ internal sealed class DebugLog
         var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz} [{level}] {message.Replace('\r', ' ').Replace('\n', ' ')}";
         entries.Add(line);
         if (entries.Count > MaxEntries) entries.RemoveAt(0);
+        if (directory is null) { LastWriteSucceeded = false; return line; }
         try
         {
             Directory.CreateDirectory(directory);

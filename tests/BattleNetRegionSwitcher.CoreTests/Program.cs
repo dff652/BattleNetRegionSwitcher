@@ -13,7 +13,14 @@ var tests = new (string Name, Action Run)[]
     ("starter failure reported", StarterFailure),
     ("game and updater processes block", GameAndUpdater),
     ("cancelled request never starts", CancelledRequest),
-    ("cancellation during checks prevents start", CancelledDuringProbe)
+    ("cancellation during checks prevents start", CancelledDuringProbe),
+    ("portable logs are preferred", PortableLogs),
+    ("unwritable portable logs fall back", FallbackLogs),
+    ("unwritable log locations use memory only", MemoryOnlyLogs),
+    ("valid saved launcher avoids discovery", SavedLauncher),
+    ("stale saved launcher triggers discovery", StaleLauncher),
+    ("missing launcher requests manual selection", NoLauncher),
+    ("invalid discovered executable rejected", InvalidDiscovery)
 };
 if (OperatingSystem.IsWindows())
 {
@@ -172,6 +179,75 @@ static void ShellPathRejectsFile()
         throw new Exception("A regular file must not be accepted as a log directory.");
     }
     finally { File.Delete(file); }
+}
+
+static void PortableLogs() => WithStorageDirectories((application, userData) =>
+{
+    var result = LogStorage.Select(application, userData);
+    Assert(result.DirectoryPath == Path.Combine(application, "logs") && !result.UsesFallback);
+    Assert(Directory.EnumerateFileSystemEntries(result.DirectoryPath ?? throw new Exception("Log directory was not selected.")).Count() == 0);
+    Assert(!Directory.Exists(Path.Combine(userData, "logs")));
+});
+
+static void FallbackLogs() => WithStorageDirectories((application, userData) =>
+{
+    File.WriteAllText(Path.Combine(application, "logs"), "existing file blocks directory creation");
+    var result = LogStorage.Select(application, userData);
+    Assert(result.DirectoryPath == Path.Combine(userData, "logs") && result.UsesFallback);
+    Assert(File.ReadAllText(Path.Combine(application, "logs")) == "existing file blocks directory creation");
+});
+
+static void MemoryOnlyLogs() => WithStorageDirectories((application, userData) =>
+{
+    File.WriteAllText(Path.Combine(application, "logs"), "block");
+    File.WriteAllText(Path.Combine(userData, "logs"), "block");
+    Assert(LogStorage.Select(application, userData).DirectoryPath is null);
+});
+
+static void WithStorageDirectories(Action<string, string> run)
+{
+    var root = Directory.CreateTempSubdirectory("BNStorage-").FullName;
+    var application = Directory.CreateDirectory(Path.Combine(root, "application")).FullName;
+    var userData = Directory.CreateDirectory(Path.Combine(root, "userData")).FullName;
+    try { run(application, userData); }
+    finally
+    {
+        foreach (var parent in new[] { application, userData })
+        {
+            var logs = Path.Combine(parent, "logs");
+            if (Directory.Exists(logs)) Directory.Delete(logs);
+            else File.Delete(logs);
+            Directory.Delete(parent);
+        }
+        Directory.Delete(root);
+    }
+}
+
+static void SavedLauncher()
+{
+    var path = TempLauncher(Path.Combine(Path.GetTempPath(), "BN Discovery Saved"));
+    var result = ClientLauncher.ResolveLauncherPath(path, () => throw new Exception("Should preserve the valid selection."));
+    Assert(result == Path.GetFullPath(path));
+}
+
+static void StaleLauncher()
+{
+    var path = TempLauncher(Path.Combine(Path.GetTempPath(), "BN Discovery New"));
+    var stale = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "Battle.net.exe");
+    var calls = 0;
+    var result = ClientLauncher.ResolveLauncherPath(stale, () => { calls++; return path; });
+    Assert(result == Path.GetFullPath(path) && calls == 1);
+}
+
+static void NoLauncher()
+{
+    Assert(ClientLauncher.ResolveLauncherPath(null, () => null) is null);
+}
+
+static void InvalidDiscovery()
+{
+    var path = TempLauncher(Path.Combine(Path.GetTempPath(), "BN Discovery Invalid"), "other.exe");
+    Assert(ClientLauncher.ResolveLauncherPath("", () => path) is null);
 }
 
 static void Assert(bool value) { if (!value) throw new Exception("assertion failed"); }

@@ -6,6 +6,7 @@
 artifacts/
 publish/
 *.log
+logs/
 *.backup
 Battle.net.config*
 settings.json

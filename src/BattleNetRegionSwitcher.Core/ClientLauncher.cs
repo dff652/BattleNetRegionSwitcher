@@ -144,6 +144,14 @@ public sealed class ClientLauncher
         }
     }
 
+    public static string? ResolveLauncherPath(string? savedPath, Func<string?>? discover = null)
+    {
+        if (!string.IsNullOrWhiteSpace(savedPath) && TryValidPath(savedPath, out var saved))
+            return saved;
+        var detected = (discover ?? FindLauncher)();
+        return !string.IsNullOrWhiteSpace(detected) && TryValidPath(detected, out var valid) ? valid : null;
+    }
+
     public static string? FindLauncher()
     {
         if (!OperatingSystem.IsWindows()) return null;

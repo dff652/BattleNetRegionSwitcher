@@ -9,6 +9,7 @@ internal sealed class MainForm : Form
     private readonly ClientLauncher launcher;
     private readonly SettingsStore store;
     private readonly DebugLog debugLog;
+    private readonly LogStorage logStorage;
     private ToolSettings settings;
     private readonly TextBox pathBox = new();
     private readonly Label status = new();
@@ -27,7 +28,8 @@ internal sealed class MainForm : Form
     {
         this.launcher = launcher;
         this.store = store;
-        debugLog = new DebugLog(store.DirectoryPath);
+        logStorage = LogStorage.Select(AppContext.BaseDirectory, store.DirectoryPath);
+        debugLog = new DebugLog(logStorage.DirectoryPath);
         settings = store.Load();
         Text = $"战网地区切换 · {AppInfo.Version}";
         ClientSize = new Size(780, 790);
@@ -58,9 +60,9 @@ internal sealed class MainForm : Form
         pathRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92));
         pathBox.Dock = DockStyle.Fill;
         pathBox.Margin = new Padding(0, 3, 10, 0);
-        pathBox.PlaceholderText = "选择 Battle.net Launcher.exe";
+        pathBox.PlaceholderText = "未自动找到战网，请点击“选择文件”";
         pathBox.AccessibleName = "战网启动程序路径";
-        pathBox.Text = string.IsNullOrWhiteSpace(settings.LauncherPath) ? ClientLauncher.FindLauncher() ?? "" : settings.LauncherPath;
+        pathBox.Text = ClientLauncher.ResolveLauncherPath(settings.LauncherPath) ?? "";
         pathBox.BackColor = Color.FromArgb(28, 39, 55);
         pathBox.ForeColor = Ink;
         browseButton = MakeButton("选择文件", Color.FromArgb(44, 61, 81));
@@ -87,13 +89,17 @@ internal sealed class MainForm : Form
         var statusPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(25, 37, 52), Padding = new Padding(14), Margin = new Padding(0, 0, 0, 10) };
         status.Dock = DockStyle.Fill;
         status.AccessibleName = "启动状态";
-        status.Text = "准备就绪。\n请先从战网菜单正常退出，并确认游戏与更新任务已停止。";
+        status.Text = string.IsNullOrEmpty(pathBox.Text)
+            ? "未自动找到战网启动程序，请点击“选择文件”。"
+            : "已自动确认战网启动路径。\n请先从战网菜单正常退出，并确认游戏与更新任务已停止。";
         statusPanel.Controls.Add(status);
         layout.Controls.Add(statusPanel, 0, 6);
         var logToolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, Margin = Padding.Empty };
         logToolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         foreach (var width in new[] { 86, 108, 100 }) logToolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, width));
-        logToolbar.Controls.Add(new Label { Text = "调试日志", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+        var logLocationLabel = logStorage.DirectoryPath is null ? "调试日志（仅本次窗口）"
+            : logStorage.UsesFallback ? "调试日志（已回退到用户目录）" : "调试日志（程序目录 / logs）";
+        logToolbar.Controls.Add(new Label { Text = logLocationLabel, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
         var copy = MakeButton("复制日志", Color.FromArgb(44, 61, 81));
         var open = MakeButton("打开日志目录", Color.FromArgb(44, 61, 81));
         var clear = MakeButton("清空视图", Color.FromArgb(44, 61, 81));
@@ -133,7 +139,11 @@ internal sealed class MainForm : Form
         };
         layout.Controls.Add(author, 0, 10);
         Log("INFO", $"工具启动；版本 {AppInfo.Version}；进程架构 {RuntimeInformation.ProcessArchitecture}。");
-        Log("INFO", string.IsNullOrEmpty(pathBox.Text) ? "尚未找到战网启动程序，请选择文件。" : "已读取启动路径。点击地区按钮后会检查文件及运行状态。");
+        Log("INFO", string.IsNullOrEmpty(pathBox.Text) ? "自动检测未找到战网启动程序，请选择文件。" : "已自动确认有效启动路径。点击地区按钮后会重新检查文件及运行状态。");
+        Log(logStorage.UsesFallback ? "WARN" : "INFO", logStorage.DirectoryPath is null
+            ? "程序目录与用户日志目录均不可写；日志仅保留在窗口，可复制反馈。"
+            : logStorage.UsesFallback ? "程序目录的 logs 不可写，已回退到当前用户数据目录下的 logs。"
+            : "日志保存在程序所在目录的 logs 子目录。");
         FormClosing += (_, e) =>
         {
             if (!busy) return;
@@ -225,7 +235,9 @@ internal sealed class MainForm : Form
         logBox.AppendText(line + Environment.NewLine);
         logBox.SelectionStart = logBox.TextLength;
         logBox.ScrollToCaret();
-        if (!debugLog.LastWriteSucceeded) SetStatus(status.Text + "\n日志文件写入失败，本次日志仍可在窗口复制。");
+        const string writeFailure = "日志文件写入失败，本次日志仍可在窗口复制。";
+        if (!debugLog.LastWriteSucceeded && !status.Text.Contains(writeFailure))
+            SetStatus(status.Text + "\n" + writeFailure);
     }
 
     private void CopyLogs()
@@ -238,8 +250,13 @@ internal sealed class MainForm : Form
     {
         try
         {
-            Directory.CreateDirectory(store.DirectoryPath);
-            var actualDirectory = ShellDirectory.ResolvePath(store.DirectoryPath);
+            if (logStorage.DirectoryPath is null)
+            {
+                SetStatus("没有可写的日志目录，请使用“复制日志”保存本次记录。");
+                return;
+            }
+            Directory.CreateDirectory(logStorage.DirectoryPath);
+            var actualDirectory = ShellDirectory.ResolvePath(logStorage.DirectoryPath);
             using var process = Process.Start(new ProcessStartInfo(actualDirectory) { UseShellExecute = true });
             SetStatus("已请求打开日志目录。");
             Log("INFO", "已解析实际日志目录并请求资源管理器打开。");
