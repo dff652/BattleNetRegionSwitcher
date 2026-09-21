@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>BattleNetRegionSwitcher</AssemblyName>
-    <Version>0.2.2</Version>
+    <Version>0.3.0</Version>
     <Authors>dff652</Authors>
     <RepositoryUrl>https://github.com/dff652/BattleNetRegionSwitcher</RepositoryUrl>
     <ApplicationManifest>app.manifest</ApplicationManifest>

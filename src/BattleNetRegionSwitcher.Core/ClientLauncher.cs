@@ -68,14 +68,6 @@ public sealed class ClientLauncher
         "Battle.net Launcher.exe", "Battle.net.exe"
     };
 
-    private static readonly string[] BlockedProcessNames =
-    {
-        "Battle.net", "Battle.net Launcher", "Agent", "Wow", "WowT", "WowB",
-        "WowClassic", "WowClassicT", "WowClassicB", "Overwatch", "DiabloIV", "DiabloIII",
-        "Hearthstone", "SC2_x64", "SC2", "HeroesOfTheStorm_x64", "HeroesOfTheStorm",
-        "D2R", "cod"
-    };
-
     private readonly IProcessProbe _probe;
     private readonly IProcessStarter _starter;
 
@@ -86,6 +78,9 @@ public sealed class ClientLauncher
     }
 
     public LaunchResult Launch(string launcherPath, LoginRegion region, CancellationToken cancellationToken = default)
+        => LaunchWhenAllowed(launcherPath, region, cancellationToken, () => true);
+
+    internal LaunchResult LaunchWhenAllowed(string launcherPath, LoginRegion region, CancellationToken cancellationToken, Func<bool> withinDeadline)
     {
         if (cancellationToken.IsCancellationRequested) return new(false, "启动请求已取消。");
         string path;
@@ -113,6 +108,7 @@ public sealed class ClientLauncher
         };
 
         if (cancellationToken.IsCancellationRequested) return new(false, "启动请求已取消。");
+        if (!withinDeadline()) return WaitForExit.TimedOut();
         if (!_starter.TryStart(path, argument, Path.GetDirectoryName(path)!))
             return new(false, "启动失败：无法启动战网客户端，请检查权限或路径。");
 
@@ -125,24 +121,10 @@ public sealed class ClientLauncher
         catch (UnauthorizedAccessException) { return new[] { "无法检查启动器路径权限" }; }
         catch (Exception) { return new[] { "启动器路径无效或不存在" }; }
 
-        try
-        {
-            var active = new HashSet<string>(_probe.GetProcessNames(), StringComparer.OrdinalIgnoreCase);
-            var blockers = BlockedProcessNames.Where(active.Contains).ToList();
-            blockers.AddRange(active.Where(n => n.StartsWith("temp_", StringComparison.OrdinalIgnoreCase)));
-            return blockers
-                .Select(n => n.Equals("Agent", StringComparison.OrdinalIgnoreCase)
-                    ? "Battle.net Agent 正在运行，请等待其结束或人工处理"
-                    : n.StartsWith("temp_", StringComparison.OrdinalIgnoreCase)
-                        ? $"检测到战网临时更新程序 {n} 正在运行，请等待更新完成"
-                    : $"检测到 {n} 正在运行，请先正常关闭")
-                .ToArray();
-        }
-        catch
-        {
-            return new[] { "无法可靠检查现有进程，已安全中止" };
-        }
+        return ReadRuntimeStatus().Blockers();
     }
+
+    public RuntimeStatus ReadRuntimeStatus() => ProcessClassification.Read(_probe);
 
     public static string? ResolveLauncherPath(string? savedPath, Func<string?>? discover = null)
     {

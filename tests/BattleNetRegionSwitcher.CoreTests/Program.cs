@@ -1,4 +1,5 @@
 using BattleNetRegionSwitcher.Core;
+using BattleNetRegionSwitcher.CoreTests;
 
 var tests = new (string Name, Action Run)[]
 {
@@ -31,6 +32,7 @@ if (OperatingSystem.IsWindows())
         ("shell path rejects a regular file", ShellPathRejectsFile)];
 }
 var failed = 0;
+tests = [.. tests, .. RegionReferenceTests.All(), .. RuntimeAndWaitTests.All()];
 foreach (var test in tests)
 {
     try { test.Run(); Console.WriteLine($"PASS {test.Name}"); }
